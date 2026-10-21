@@ -179,7 +179,14 @@ function ending() {
   show(`<section class="journal ending-panel"><span class="small">${solved ? '案件解决 / 复盘' : '行动耗尽 / 调查未完成'}</span><h2 id="panel-title">${solved ? '各自的记忆，终于拼合。' : '线索还没有接成完整的答案。'}</h2><p>${solved ? '人物、物品位置与授权状态，都有公共证据支持。' : '调查已结束。可以回看你已掌握的材料，或重新开始；下一轮记得留一次行动提交结案。'}</p>${state.judgment ? state.judgment.map(item=>`<p class="result-line">${item.passed ? '✓' : '○'} ${item.title} · ${item.feedback}</p>`).join('') : ''}${solved ? `<ol class="truth-timeline">${truth.map(([time,text])=>`<li><time>${time}</time><span>${text}</span></li>`).join('')}</ol>` : ''}<div class="choices">${choice('查看调查手记','journal')}${choice('重新开始','restart','',true)}${choice('回看现场','close')}</div></section>`,'ending');
 }
 function restart() {
-  show(`<section class="journal"><span class="small">新的调查</span><h2 id="panel-title">重新开始这个案件？</h2><p>将清空本轮二维版进度，回到展厅。原版存档不受影响。</p><div class="choices">${choice('重新开始','reset','',true)}${choice('保留当前调查','close')}</div></section>`,'restart');
+  show(`<section class="journal"><span class="small">新的调查</span><h2 id="panel-title">重新开始这个案件？</h2><p>将清空本轮调查进度，返回最初的标题界面。点击「开始调查」后再进入展厅。</p><div class="choices">${choice('重新开始','reset','',true)}${choice('保留当前调查','close')}</div></section>`,'restart');
+}
+function titleScreen() {
+  $('#title-screen').hidden=false; $('#play-ui').hidden=true;
+  $('#enter-game').textContent=hasSave ? playing() ? '继续调查' : '查看本轮复盘' : '开始调查';
+  $('#menu-restart').hidden=!hasSave;
+  $('#resume-status').textContent=hasSave ? `已保存 · ${rooms[room].name} · ${knownEvidence(state,'captain').length} 份材料 · 剩余 ${state.remaining} 次行动` : '进度自动保存在当前浏览器';
+  $('#enter-game').focus();
 }
 function enter() {
   $('#title-screen').hidden=true; $('#play-ui').hidden=false;
@@ -190,7 +197,18 @@ function enter() {
 function guide() {
   show(`<section class="journal"><span class="small">调查指南</span><h2 id="panel-title">听见彼此，才能接近真相。</h2><p>你是调查队长。点击场景中的标记观察物件，或让搭档展开调查；通过「山庄地点」前往其他房间。</p><p>队员的发现先留在各自的记忆里。听取汇报后，材料才进入你的手记；你可以单独告诉某位队员，也可以放入公共证据板让全队知晓。</p><p>共有 8 次行动。调查、案情会和提交结案各消耗 1 次；切换地点、听取汇报与传递材料免费。记得留 1 次行动结案。</p><p>结案时，选择人物、物品位置和授权状态，并引用公共证据支持判断。</p><div class="choices">${choice('明白了','close','',true)}</div></section>`,'guide');
 }
-function reset() { bootError=''; state=fresh(); room='hall'; $('#close').hidden=false; persist(); close(); enter(); }
+function reset() {
+  // Remove the saved run before changing the UI; a new run is saved only on Start.
+  try { localStorage.removeItem(SAVE_KEY); }
+  catch { notify('无法清除浏览器中的进度，本轮调查尚未重置。'); return; }
+  bootError=''; state=fresh(); room='hall'; hasSave=false;
+  clearTimeout(toastTimer); $('#toast').classList.remove('visible'); $('#toast').textContent='';
+  $('#game').classList.remove('hide-hints');
+  $('#hints').setAttribute('aria-pressed','true'); $('#hints').textContent='调查标记 开';
+  $('#save-status').textContent='固定剧情 · 自动保存';
+  $('.room-art').getAnimations().forEach(animation=>animation.cancel());
+  $('#close').hidden=false; close(); render(); titleScreen();
+}
 function render() {
   const current=rooms[room], actor=current.companion;
   $('#game').dataset.room=room; $('.room-art img').src=roomImage(room);
@@ -241,8 +259,4 @@ render();
 if (bootError) {
   $('#close').hidden=true;
   show(`<section class="journal"><h2 id="panel-title">进度读取失败</h2><p>${escape(bootError)}</p><p>原存档尚未覆盖。可以关闭页面保留文件，或明确重新开始二维版。</p><div class="choices">${choice('重新开始二维版','reset','',true)}</div></section>`,'save-error');
-} else if (hasSave) {
-  $('#enter-game').textContent=playing() ? '继续调查' : '查看本轮复盘';
-  $('#menu-restart').hidden=false;
-  $('#resume-status').textContent=`已保存 · ${rooms[room].name} · ${knownEvidence(state,'captain').length} 份材料 · 剩余 ${state.remaining} 次行动`;
-}
+} else titleScreen();
