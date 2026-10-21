@@ -11,6 +11,11 @@
   <main id="game" aria-label="雨夜山庄二维调查">
     <div class="room-art" aria-hidden="true"><img src="./assets/scenes/hall-2d-v1.png" alt=""><div class="window-rain"></div><div class="lamplight"></div></div>
     <div class="shade" aria-hidden="true"></div>
+    <section id="title-screen" aria-labelledby="game-title">
+      <div class="title-copy"><p class="title-kicker">MNEMOWEAVE · 忆织</p><h1 id="game-title">雨夜山庄</h1><p class="title-chapter">第一章 · 消失的月光石</p><p class="title-intro">雨封住了山路，展柜里的月光石不见了。<br>三位搭档，各自记住了真相的一部分。</p><div class="title-actions"><button id="enter-game" class="primary" data-command="enter">开始调查</button><button id="menu-restart" data-command="restart" hidden>重新开始</button><button data-command="guide">调查指南</button></div><p id="resume-status" class="menu-note">进度自动保存在当前浏览器</p></div>
+      <div class="title-bottom"><span>观察现场 · 交流发现 · 拼合真相</span><span>固定剧情试玩版 / 建议使用电脑游玩</span></div>
+    </section>
+    <div id="play-ui" hidden>
     <header>
       <a class="wordmark" href="./" aria-label="返回首页">忆织<span>MNEMOWEAVE</span></a>
       <div class="chapter"><span class="small">第一章 / 月光石</span><h1>雨夜 · 展厅</h1><p>21:00 &nbsp; 山庄东翼 &nbsp; / &nbsp; 雨仍未停</p></div>
@@ -22,6 +27,7 @@
       <div class="objective"><span class="small">当前调查</span><p id="objective"></p><div class="steps"><span id="action-budget"></span><span>交流、传递与切换地点免费</span><span>留 1 次行动结案</span></div></div>
       <div class="edition"><span id="save-status">固定剧情 · 自动保存</span><small><button id="hints" aria-pressed="true">调查标记 开</button> · <button id="restart">重新开始</button></small><span>月光石 · 雨夜山庄</span></div>
     </footer>
+    </div>
     <div id="toast" role="status" aria-live="polite"></div>
     <dialog id="panel" aria-labelledby="panel-title"><button id="close" class="close" aria-label="关闭面板">×</button><div id="panel-body"></div></dialog>
     <noscript>请启用 JavaScript 后进行调查。</noscript>

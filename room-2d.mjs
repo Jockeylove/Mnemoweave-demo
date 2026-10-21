@@ -2,12 +2,13 @@ import { createGame, transition, knownEvidence, actionStatus, restoreGame } from
 import { agents, participants, evidence, actions, resolution, truth } from './case.mjs';
 import { hallSpots } from './navigation.mjs';
 import { rooms, roomImage } from './rooms-2d.mjs';
+import { materialView } from './evidence-visuals.mjs';
 
 const SAVE_KEY = 'mnemoweave.moonstone.2d.v1';
 const $ = selector => document.querySelector(selector);
 const panel = $('#panel');
 const fresh = () => transition(createGame(), { type: 'start' });
-let state = fresh(), room = 'hall', bootError = '', navigating = false, toastTimer;
+let state = fresh(), room = 'hall', bootError = '', navigating = false, hasSave = false, toastTimer;
 try {
   const saved = localStorage.getItem(SAVE_KEY);
   if (saved) {
@@ -15,6 +16,7 @@ try {
     if (!Object.hasOwn(rooms, value.room)) throw new Error('存档中的地点无法识别。');
     state = restoreGame(value.state);
     room = value.room;
+    hasSave = true;
   }
 } catch (error) { bootError = `无法读取二维版进度：${error.message}`; }
 const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
@@ -26,6 +28,7 @@ const pending = actor => Object.keys(actions).filter(id => actions[id].agent !==
 function persist() {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({ state, room }));
+    hasSave = true;
     $('#save-status').textContent = '固定剧情 · 进度已保存';
   } catch {
     $('#save-status').textContent = '保存失败 · 请勿刷新';
@@ -42,7 +45,7 @@ function close() { panel.close(); }
 function show(content, mode) {
   $('#panel-body').innerHTML = content; panel.dataset.mode = mode;
   if (!panel.open) panel.showModal();
-  $('#close').focus();
+  $('#close').focus(); panel.scrollTop=0;
 }
 function choice(label, command, value = '', primary = false, disabled = false) {
   return `<button type="button" data-command="${command}" data-value="${value}" class="${primary ? 'primary' : ''}" ${disabled ? 'disabled' : ''}>${label}</button>`;
@@ -57,20 +60,23 @@ function record(id) {
   const item = evidence[id];
   return `<div class="record"><small>${item.time} · ${item.label}</small><p>${item.text}</p></div>`;
 }
+function report(id) {
+  const action = actions[id], actor = participants[action.agent];
+  // Display only materials already communicated to the player, including related scene records.
+  const related = ['inspect','footage'].includes(id) ? ['E01','E02'] : action.produces;
+  const ids = related.filter(e => knows('captain',e));
+  show(`<section class="journal report-panel"><span class="small">${rooms[action.location].name} / 调查记录</span><h2 id="panel-title">${action.name}</h2>${materialView(ids)}<div class="report-speaker">${action.agent === 'captain' ? '' : `<img src="./${actor.portrait}" alt="${actor.name}">`}<div><span class="small">${actor.name} · ${actor.role}</span><p>“${action.report}”</p></div></div><details class="full-record"><summary>展开完整文字记录 · ${action.produces.length} 份</summary><div class="report-records">${action.produces.filter(e=>knows('captain',e)).map(record).join('')}</div></details><div class="choices">${choice('在手记中传递材料','journal','',true)}${action.agent === 'captain' ? '' : choice('继续交流','talk',action.agent)}${action.repeat && playing() ? choice('重新调取 · 1 次行动','investigate',id,false,!actionStatus(state,id).allowed) : ''}${choice('回到现场','close')}</div></section>`,`report:${id}`);
+}
 function spotFor(action) { return rooms[actions[action].location].hotspots.find(spot => spot.action === action); }
 function detail(id, spotId) {
   const action = actions[id];
   const spot = spotId ? rooms[action.location].hotspots.find(item=>item.id===spotId) : spotFor(id);
   const status = actionStatus(state,id), done = complete(id);
+  if (done && received(id)) { report(id); return; }
   let body = `<p>${spot.text}</p>`, buttons = '';
   if (done) {
-    if (received(id)) {
-      body = `<p>${action.report}</p>${action.produces.map(record).join('')}`;
-      buttons += choice('在手记中传递材料', 'journal', '', true);
-    } else {
       body = `<p>${participants[action.agent].name}已完成这项调查。具体发现还没有向你汇报。</p><p class="muted">与队员交流后，材料才会进入你的手记。</p>`;
       buttons += choice('听取调查汇报', 'receive', id, true, !playing());
-    }
   }
   if ((!done || action.repeat) && playing()) {
     body += `<p class="muted">${status.allowed ? `由${participants[action.agent].name}调查 · 消耗 1 次行动${state.remaining === 1 ? '。这会耗尽行动，无法再提交结案。' : ''}` : status.reason}</p>`;
@@ -92,10 +98,7 @@ function investigate(id) {
 }
 function receive(id) {
   send({type:'receive-report',action:id});
-  const action = actions[id];
-  layout({title:participants[action.agent].name,eyebrow:`调查汇报 / ${rooms[action.location].name}`,actor:action.agent,
-    body:`<p>“${action.report}”</p>${action.produces.map(record).join('')}`,
-    buttons:choice('打开手记，传递发现','journal','',true)+choice('继续交流','talk',action.agent)+choice('回到现场','close'),mode:`report:${id}`});
+  report(id);
   notify('已听取汇报 · 材料加入你的手记');
 }
 function sharedThought(actor) {
@@ -123,9 +126,13 @@ function journal() {
   const ids = knownEvidence(state,'captain');
   const articles = ids.map(id=>{
     const item=evidence[id], recipients=Object.keys(agents).filter(actor=>knows(actor,id)).map(actor=>agents[actor].name);
-    return `<article data-evidence="${id}"><span class="small">${item.label}</span><h3>${item.title}</h3><p>${item.text}</p><div class="source">${item.source} · ${item.time}</div><p class="source">${state.public.includes(id) ? '已放入公共证据板 · 全队知晓' : recipients.length ? `你与${recipients.join('、')}知晓` : '目前只有你记录了这份材料'}</p>${playing() ? `<div class="evidence-share">${Object.keys(agents).filter(actor=>!knows(actor,id)).map(actor=>choice(`告诉${agents[actor].name}`,'share',`${id}:${actor}`)).join('')}${!state.public.includes(id) ? choice('放入公共证据板','share',`${id}:all`,true) : ''}</div>` : ''}</article>`;
+    return `<article data-evidence="${id}"><span class="small">${item.label}</span><h3>${item.title}</h3><p>${item.text}</p>${choice("查看材料图示","material",id)}<div class="source">${item.source} · ${item.time}</div><p class="source">${state.public.includes(id) ? '已放入公共证据板 · 全队知晓' : recipients.length ? `你与${recipients.join('、')}知晓` : '目前只有你记录了这份材料'}</p>${playing() ? `<div class="evidence-share">${Object.keys(agents).filter(actor=>!knows(actor,id)).map(actor=>choice(`告诉${agents[actor].name}`,'share',`${id}:${actor}`)).join('')}${!state.public.includes(id) ? choice('放入公共证据板','share',`${id}:all`,true) : ''}</div>` : ''}</article>`;
   }).join('');
   show(`<section class="journal"><span class="small">月光石 / 现场笔记</span><h2 id="panel-title">调查手记 <span class="small">${ids.length} 份材料 · 公共 ${state.public.length} 份</span></h2><p class="source">先听取队员汇报，再决定告诉谁。结案只引用已放入公共证据板的材料。</p>${ids.length ? `<div class="journal-grid">${articles}</div>` : '<p class="empty">纸页还是空的。先调查现场，或听取队员的发现。</p>'}<div class="choices">${choice('联系队员','team')}${choice('整理结案','conclude','',true)}${choice('回到现场','close')}</div></section>`,'journal');
+}
+function material(id) {
+  if (!knows('captain',id)) return;
+  show(`<section class="journal report-panel"><span class="small">调查手记 / 已取得材料</span><h2 id="panel-title">${evidence[id].title}</h2>${materialView([id])}${record(id)}<div class="choices">${choice('返回手记','journal','',true)}${choice('回到现场','close')}</div></section>`,`material:${id}`);
 }
 function team() {
   const cards=Object.entries(agents).map(([id,a])=>`<article class="team-card"><img src="./${a.portrait}" alt="${a.name}"><div><span class="small">${a.role}</span><h3>${a.name}</h3><p>${pending(id).length ? `${pending(id).length} 项调查等待汇报` : '可以交流已取得的材料'}</p>${choice('与队员交流','talk',id)}</div></article>`).join('');
@@ -174,7 +181,16 @@ function ending() {
 function restart() {
   show(`<section class="journal"><span class="small">新的调查</span><h2 id="panel-title">重新开始这个案件？</h2><p>将清空本轮二维版进度，回到展厅。原版存档不受影响。</p><div class="choices">${choice('重新开始','reset','',true)}${choice('保留当前调查','close')}</div></section>`,'restart');
 }
-function reset() { bootError=''; state=fresh(); room='hall'; $('#close').hidden=false; persist(); render(); close(); }
+function enter() {
+  $('#title-screen').hidden=true; $('#play-ui').hidden=false;
+  if (!hasSave) persist();
+  render(); $('#map').focus();
+  if (!playing()) ending();
+}
+function guide() {
+  show(`<section class="journal"><span class="small">调查指南</span><h2 id="panel-title">听见彼此，才能接近真相。</h2><p>你是调查队长。点击场景中的标记观察物件，或让搭档展开调查；通过「山庄地点」前往其他房间。</p><p>队员的发现先留在各自的记忆里。听取汇报后，材料才进入你的手记；你可以单独告诉某位队员，也可以放入公共证据板让全队知晓。</p><p>共有 8 次行动。调查、案情会和提交结案各消耗 1 次；切换地点、听取汇报与传递材料免费。记得留 1 次行动结案。</p><p>结案时，选择人物、物品位置和授权状态，并引用公共证据支持判断。</p><div class="choices">${choice('明白了','close','',true)}</div></section>`,'guide');
+}
+function reset() { bootError=''; state=fresh(); room='hall'; $('#close').hidden=false; persist(); close(); enter(); }
 function render() {
   const current=rooms[room], actor=current.companion;
   $('#game').dataset.room=room; $('.room-art img').src=roomImage(room);
@@ -194,7 +210,7 @@ function render() {
   $('#objective').textContent=!playing() ? state.phase === 'solved' ? '案件已解决。可查看结案复盘。' : '行动已耗尽。可回看本轮调查。' : pending().length ? '有队员带回了发现。点击「联系队员」听取汇报。' : current.mood;
   $('#action-budget').textContent=`剩余 ${state.remaining} / 8 次行动`; $('#action-budget').classList.toggle('last-action',state.remaining === 1);
 }
-const commands={close,detail,investigate,receive,talk,journal,team,meeting,map,travel,conclude,restart,reset,
+const commands={close,detail,investigate,receive,talk,journal,team,meeting,map,travel,conclude,restart,reset,enter,guide,material,
   share(value) {
     const [id,recipient]=value.split(':');
     send({type:'share',sender:'captain',recipient,evidence:[id]});
@@ -225,4 +241,8 @@ render();
 if (bootError) {
   $('#close').hidden=true;
   show(`<section class="journal"><h2 id="panel-title">进度读取失败</h2><p>${escape(bootError)}</p><p>原存档尚未覆盖。可以关闭页面保留文件，或明确重新开始二维版。</p><div class="choices">${choice('重新开始二维版','reset','',true)}</div></section>`,'save-error');
-} else if (!playing()) ending();
+} else if (hasSave) {
+  $('#enter-game').textContent=playing() ? '继续调查' : '查看本轮复盘';
+  $('#menu-restart').hidden=false;
+  $('#resume-status').textContent=`已保存 · ${rooms[room].name} · ${knownEvidence(state,'captain').length} 份材料 · 剩余 ${state.remaining} 次行动`;
+}
