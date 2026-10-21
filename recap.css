@@ -1,0 +1,20 @@
+/* Illustrated ending: one scene and a readable page, advanced by the player. */
+dialog:has(.story-recap){width:92cqw;max-width:96%;max-height:92%;overflow:hidden;background:#111e20}
+.story-recap{height:min(47cqw,88svh);display:grid;grid-template-rows:auto minmax(0,1fr) auto;isolation:isolate}
+.recap-heading{display:flex;gap:2cqw;justify-content:space-between;align-items:center;padding:1.2cqw 4cqw 1.2cqw 2cqw;border-bottom:1px solid #b8a17d4d;color:#d9c5a0;font-size:var(--text-meta);letter-spacing:.12em}
+.recap-spread{display:grid;grid-template-columns:57% 43%;min-height:0}
+.recap-art{position:relative;margin:0;min-height:0;overflow:hidden;background:#0b1518}
+.recap-art img{display:block;width:100%;height:100%;object-fit:cover;animation:recap-reveal .5s ease-out}
+.recap-art:after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 4cqw #07101255;pointer-events:none}
+.recap-art figcaption{position:absolute;bottom:1.2cqw;left:1.5cqw;padding:.35cqw .65cqw;background:#101c20d9;color:#dce2dd;font-size:var(--text-meta);z-index:1}
+.recap-copy{padding:2.2cqw 2.6cqw;overflow:auto;scrollbar-color:#b6a17b #122124;align-self:center;max-height:100%;box-sizing:border-box}
+.recap-time{font-size:var(--text-small);color:#d1b98f;letter-spacing:.06em}
+.recap-copy h2{font:clamp(30px,2cqw,44px)/1.5 'SimSun',serif;color:#f3e8d4;letter-spacing:.1em;margin:.9cqw 0 1.5cqw}
+.recap-copy p{font-size:clamp(21px,1.18cqw,27px);line-height:1.95;letter-spacing:.025em;color:#e0e3db;margin:0 0 1.1cqw}
+.recap-footer{border-top:1px solid #b8a17d4d;padding:1cqw 1.8cqw;display:flex;justify-content:space-between;align-items:center;gap:1.3cqw;background:#0f1b1e}
+.recap-links,.recap-navigation{display:flex;align-items:center;gap:.7cqw;flex-wrap:wrap}
+.recap-footer button{padding:.6cqw .8cqw;border:1px solid #b8a17d66;font-size:var(--text-small);line-height:1.5}
+.recap-footer button:hover{background:#2b3c3c}.recap-footer button.primary{background:#cfb68a;color:#172326;border-color:#cfb68a}.recap-footer button:disabled{opacity:.4;cursor:default}
+.recap-navigation span{font-size:var(--text-meta);color:#c4ccc4;min-width:3.7em;text-align:center}
+@keyframes recap-reveal{from{opacity:.5}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.recap-art img{animation:none}}

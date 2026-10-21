@@ -1,5 +1,6 @@
 import { agents, participants, actions, evidence, resolution } from './case.mjs';
 import { walkable, findPath, hallSpots } from './navigation.mjs';
+import { councilEvidence, newCouncil, councilNode, councilConclusion } from './council.mjs';
 
 export function createGame() {
   return {
@@ -9,6 +10,18 @@ export function createGame() {
     hallPositions: { captain: [-.65,4.65], ajing: [.75,4.65] },
     events: [], lastReport: null, judgment: null
   };
+}
+
+// Presentation stops before the meeting: findings remain with their owners.
+export function createDemoGame() {
+  let state = transition(createGame(), {type:'start'});
+  for (const action of ['inspect','footage','interview','registry','trolley','permit','search']) {
+    if (action === 'footage') state = transition(state,{type:'move',actor:'ajing',point:[...hallSpots.footage]});
+    if (action === 'trolley') state = transition(state,{type:'share',sender:'ajing',evidence:['E02'],recipient:'shuheng'});
+    if (action === 'permit') state = transition(state,{type:'share',sender:'wensheng',evidence:['E04'],recipient:'shuheng'});
+    state = transition(state,{type:'investigate',action});
+  }
+  return state;
 }
 
 const unique = values => [...new Set(values)];
@@ -36,7 +49,7 @@ export function checkConclusion(state, answers, citations) {
   return resolution.map(rule => {
     const support = rule.supports.find(group => group.every(id => citations.includes(id)));
     const passed = answers[rule.key] === rule.answer && Boolean(support);
-    return { key: rule.key, title: rule.title, passed, references: passed ? support : [], feedback: passed ? '结论与引用证据相符。' : rule.failure };
+    return { key: rule.key, title: rule.title, passed, references: passed ? support : [], feedback: passed ? '这项判断有相应记录支持。' : rule.failure };
   });
 }
 function share(state, sender, ids, recipient) {
@@ -48,18 +61,53 @@ function share(state, sender, ids, recipient) {
   recipients.forEach(agent => { state.memories[agent] = unique([...state.memories[agent], ...ids]); });
   event(state, { type: 'share', actor: sender, recipient, evidence: ids, text: `${participants[sender].name}将${ids.length}份材料分享给${recipient === 'all' ? '全队' : participants[recipient].name}。` });
 }
+// The caller supplies the evidence available in this conversation. Meetings use
+// the shared pool; private conversations use the speaker/captain intersection.
+export function characterReasoning(agent, known) {
+  const has = id => known.includes(id), lines = [], references = new Set();
+  const say = (text, ids) => { lines.push(text); ids.forEach(id => references.add(id)); };
+  if (agent === 'ajing') {
+    if (has('E01') && has('E02')) say('20:10 开柜，20:12 箱子就到走廊了。两分钟，动作够快的。可惜没拍清脸，还得看看别的记录。',['E01','E02']);
+    else if (has('E01')) say('20:10 有人刷卡开柜，重量跟着少了。先查那会儿谁拿着卡；东西从哪条路出去的，录像也得看。',['E01']);
+    else if (has('E02')) say('20:12，车推着箱子往温室去了。脸看不清，光凭这段录像，我认不出是谁。',['E02']);
+    if (has('E08')) say('温室工作台下那只箱子里就是月光石，可算没白找。',['E08']);
+    else if (has('E02')) say('我想先去温室翻翻。箱子长得像，里面是不是月光石，打开才知道。',['E02']);
+    if (has('E02') && has('E06')) say('车也对上了，是林舟领的那辆。20:12 还没到归还时间，又是他。',['E02','E06']);
+    else if (has('E02')) say('车身编号拍得清楚。队长，把这段给取教授看看，请他查一下领用册。',['E02']);
+  } else if (agent === 'wensheng') {
+    if (has('E03') && has('E01')) say('凭条写着林舟 19:50 借卡、20:25 归还，中间没有转借记录。开柜是 20:10，卡正借在他手上，我更怀疑是他。',['E03','E01']);
+    else if (has('E03')) say('林舟借过卡，19:50 到 20:25，中间没有转借记录。现在得看看开柜时间是不是落在这段里。',['E03']);
+    else if (has('E05')) say('许禾是登记人。卡有没有借出去，我还得去问问，不能只盯着他的名字。',['E05']);
+    if (has('E04') && has('E07')) say('他说按维护申请搬，可那份申请早撤销了。我想再问他：是谁告诉他可以搬的？这件事目前还没问清。',['E04','E07']);
+    else if (has('E04')) say('林舟说自己按维护申请搬的。我把编号记下了，先请取教授查查，再回来问他。',['E04']);
+    if (has('E08')) say('月光石找到了就好。待会儿问话，可以直接问它为什么会在温室。',['E08']);
+  } else if (agent === 'shuheng') {
+    if (has('E05') && has('E03')) say('两页我都看了。许禾的卡借给了林舟，名字没写错。开柜那会儿，卡还在谁手里？把时间也放过来。',['E05','E03']);
+    else if (has('E05')) say('登记册只能确认这张卡属于许禾。借没借给别人，这页没记。',['E05']);
+    else if (has('E01') && has('E03')) say('开柜日志与借用凭条能对上卡号和时间。结案时，两份都要附上。',['E01','E03']);
+    if (has('E07')) say('18:40，这份申请已经撤销。我翻过当晚的其他批复，没有另一份批准。他搬的时候，这张申请已经不能用了。',['E07']);
+    else if (has('E04')) say('编号有了，我得找到原件再看。总不能他说批准了，就算批准了。',['E04']);
+    if (has('E02') && has('E06')) say('领用册与录像的车号一致。林舟领用的时段是 19:55 到 20:20，录像拍在 20:12，也能对上。',['E02','E06']);
+    else if (has('E06')) say('林舟领车的时间是 19:55 到 20:20。还要拿它和现场录像对照，单看领用册不够。',['E06']);
+  }
+  if (!lines.length) lines.push({ajing:'我这边还没凑出能判断的线索。先把现场和录像看一遍。',wensheng:'我还想听听当事人的话。现在让我猜，我也没底。',shuheng:'现有材料还不够我核对。把访谈里的编号或现场记录拿来，我继续查。'}[agent]);
+  return { lines, evidence: [...references] };
+}
 function meetingReport(state, agent) {
-  const known = knownEvidence(state, agent);
-  const reports = [`我目前持有 ${known.length} 份材料。`];
-  if (known.includes('E01') && known.includes('E03')) reports.push('展柜打开时，那张通行卡还在林舟的借用时段内。日志和凭条能对上。');
-  else if (known.includes('E01')) reports.push('日志留下了开柜通行卡的编号，还得查清当时是谁拿着它。');
-  if (known.includes('E04') && known.includes('E07')) reports.push('林舟提到的维护申请在案发前就撤销了，他的授权说法不能成立。');
-  else if (known.includes('E04')) reports.push('林舟说搬运有维护申请作为依据，得请书衡核实。');
-  if (known.includes('E02') && !known.includes('E08')) reports.push('录像显示运输箱驶向温室，建议实地搜索。');
-  if (known.includes('E08')) reports.push('月光石已在温室找回。');
-  if (known.includes('E02') && !known.includes('E06')) reports.push('录像里能辨认出手推车的编号，也可以追查是谁领走了它。');
-  if (!known.length) reports.push('我还没有收到调查材料。');
-  return { actor: agent, text: reports.join(''), evidence: known };
+  const report = characterReasoning(agent, knownEvidence(state, agent));
+  return { actor: agent, text: report.lines.join(' '), evidence: report.evidence };
+}
+
+function enterCouncilLine(state) {
+  const council=state.council, frame=councilNode(council).frames[council.index];
+  const key=`${council.node}:${council.index}:${council.proposal || ''}`;
+  if(council.visited.includes(key))return;
+  const refs=frame.refs || [];
+  const unshared=refs.filter(id=>!state.public.includes(id));
+  if(unshared.length)share(state,frame.speaker,unshared,'all');
+  council.presented=unique([...council.presented,...refs]);
+  council.visited.push(key);
+  event(state,{type:'council-line',actor:frame.speaker,recipient:frame.to || 'all',evidence:refs,text:frame.text});
 }
 
 export function transition(previous, command) {
@@ -71,6 +119,43 @@ export function transition(previous, command) {
     return state;
   }
   if (state.phase !== 'playing') throw new Error('本次调查已结束，请查看复盘或重新开局。');
+  if(command.type==='council-start') {
+    const available=councilEvidence(state);
+    if(!available.length)throw new Error('先取得一份调查材料，再召集大家讨论。');
+    const current=state.council;
+    if(!current?.active || available.some(id=>!current.evidence.includes(id))) {
+      state.council=newCouncil(state);
+      event(state,{type:'council-start',evidence:[],text:'召集小队讨论，材料将随发言向全队公开。'});
+    }
+    enterCouncilLine(state);
+    return state;
+  }
+  if(['council-next','council-previous','council-choice'].includes(command.type)) {
+    const council=state.council;
+    if(!council?.active)throw new Error('请先召集小队讨论。');
+    const node=councilNode(council), last=council.index===node.frames.length-1;
+    if(command.type==='council-next') {
+      if(!last)council.index++;
+    } else if(command.type==='council-previous') {
+      if(council.index>0)council.index--;
+    } else {
+      const selected=node.choices.find(option=>option.id===command.choice);
+      if(!last || !selected)throw new Error('听完当前发言后，再选择这一轮的问题。');
+      event(state,{type:'council-choice',actor:'captain',evidence:[],choice:selected.id,text:selected.label});
+      if(selected.id==='leave') { council.active=false;return state; }
+      if(selected.id==='confirm') {
+        const conclusion=councilConclusion(council);
+        council.active=false;
+        return transition(state,{type:'submit',...conclusion});
+      }
+      if(selected.id.startsWith('person:')) {
+        council.proposal=selected.id.slice(7);council.node='proposal';
+      } else council.node=selected.id;
+      council.index=0;
+    }
+    enterCouncilLine(state);
+    return state;
+  }
   if (command.type === 'move') {
     if (!['captain','ajing'].includes(command.actor) || !findPath(state.hallPositions[command.actor], command.point)) throw new Error('这个位置不能通行。');
     state.hallPositions[command.actor] = [...command.point];
@@ -156,5 +241,15 @@ export function restoreGame(value) {
   }
   if ((value.phase === 'playing' && value.remaining === 0) ||
       (value.phase === 'unfinished' && value.remaining !== 0)) throw new Error('本地存档的行动状态不完整，请重新开局。');
+  if(value.council) {
+    const council=value.council;
+    if(typeof council.active!=='boolean' || !Array.isArray(council.evidence) || council.evidence.some(id=>!evidence[id]) ||
+      !council.owners || council.evidence.some(id=>!participants[council.owners[id]]) ||
+      !Array.isArray(council.presented) || council.presented.some(id=>!council.evidence.includes(id) || !value.public.includes(id)) ||
+      !Array.isArray(council.visited) || council.visited.some(id=>typeof id!=='string') ||
+      (council.proposal!==null && !resolution[0].options.some(([id])=>id===council.proposal)))throw new Error('本地存档的讨论记录不完整。');
+    const node=councilNode(council);
+    if(!Number.isInteger(council.index) || council.index<0 || council.index>=node.frames.length)throw new Error('本地存档的讨论位置不完整。');
+  }
   return structuredClone(value);
 }

@@ -1,19 +1,19 @@
 export const agents = {
-  ajing: { name: '阿镜', role: '现场勘查', initial: '镜', portrait: 'assets/portraits/ajing-v1.png', bio: '现场不会给出答案，但会留下痕迹。' },
-  wensheng: { name: '闻声', role: '人物访谈', initial: '声', portrait: 'assets/portraits/wensheng-v1.png', bio: '先记清对方说了什么，再判断是否可信。' },
-  shuheng: { name: '书衡', role: '档案核对', initial: '衡', portrait: 'assets/portraits/shuheng-v1.png', bio: '记录上的名字，不一定是当时的持有人。' }
+  ajing: { name: '阿镜', role: '侦探 · 现场勘查', initial: '镜', portrait: 'assets/portraits/ajing-painted-v7.png', profile: '说话有点懒散，查起现场倒很利落。', bio: '队长，站这儿也看不出花来。分头查，有发现叫我。' },
+  wensheng: { name: '闻声', role: '调查助手 · 人物访谈', initial: '声', portrait: 'assets/portraits/wensheng-painted-v5.png', profile: '爱跟人聊天，一边听，一边飞快地记笔记。', bio: '笔带了，本子也带了。走吧，今天谁先问？' },
+  shuheng: { name: '取风', role: '取教授 · 档案核对', initial: '风', portrait: 'assets/portraits/qufeng-painted-v2.png', profile: '大家叫他取教授。遇上拿不准的事，会把原件再翻一遍。', bio: '要查哪份记录？把你手上的材料给我看看。' }
 };
 export const participants = {
-  captain: { name: '你', role: '现场队长', portrait: 'assets/portraits/captain-v1.png', bio: '亲自观察，和搭档一起拼出完整经过。' },
+  captain: { name: '你', role: '现场队长', portrait: 'assets/portraits/captain-painted-v3.png', bio: '亲自观察，和搭档一起拼出完整经过。' },
   ...agents
 };
 
 export const locations = {
   hall: { name: '展厅', number: '01', subtitle: '玻璃展柜 · 出入口录像', description: '展柜完好，月光石却已不在原处。摄像头仍对着通向温室的走廊。', x: 27, y: 28 },
-  archive: { name: '档案室', number: '02', subtitle: '通行卡登记 · 维护申请', description: '登记册与申请记录留在桌上。要查清一项许可，必须核对它在当晚的有效状态。', x: 72, y: 28 },
-  duty: { name: '值班室', number: '03', subtitle: '当事人 · 借用凭据', description: '先听当事人的解释，再查看他们提供的凭据。两者需要分别记录。', x: 50, y: 54 },
-  equipment: { name: '器材间', number: '04', subtitle: '推车 · 领用记录', description: '山庄的运输工具都在这里登记领用。先从现场找到线索，再来追查是谁借走了那辆车。', x: 27, y: 80 },
-  garden: { name: '温室', number: '05', subtitle: '植物架 · 工作台', description: '雾气凝在玻璃内侧。这里需要一次实地搜索，才能确认物品的去向。', x: 72, y: 80 }
+  archive: { name: '档案室', number: '02', subtitle: '通行卡登记 · 维护申请', description: '台灯旁堆着登记册和申请档案，取教授正在找对应的页码。', x: 72, y: 28 },
+  duty: { name: '值班室', number: '03', subtitle: '当事人 · 借用凭据', description: '当事人在桌旁等着，闻声已经翻开了笔记本。', x: 50, y: 54 },
+  equipment: { name: '器材间', number: '04', subtitle: '推车 · 领用记录', description: '山庄的运输工具都在这里登记领用。领用册就在门边。', x: 27, y: 80 },
+  garden: { name: '温室', number: '05', subtitle: '植物架 · 工作台', description: '玻璃内侧凝着雾，工作台下的东西看不太清。', x: 72, y: 80 }
 };
 
 export const evidence = {
@@ -28,20 +28,20 @@ export const evidence = {
 };
 
 export const actions = {
-  inspect: { name: '亲自检查展柜', location: 'hall', agent: 'captain', produces: ['E01'], requires: [], repeat: false, report: '柜锁完好，没有撬动的痕迹。日志显示，有人在 20:10 刷卡开柜，随后柜内重量减少。你记下了卡号，接下来可以查查这张通行卡的来历。' },
-  footage: { name: '请阿镜查看录像', location: 'hall', agent: 'ajing', produces: ['E02'], requires: [], repeat: false, report: '20:12，有人用手推车把箱子运往温室，外观和展柜的运输箱一致。脸看不清，但车身编号还能辨认。我记下来了，可以去器材间查查。' },
-  interview: { name: '访谈并查看凭据', location: 'duty', agent: 'wensheng', produces: ['E03', 'E04'], requires: [], repeat: false, report: '林舟拿出了一张通行卡借用凭条。他说搬运是按维护申请办的，还报了申请编号。凭条我记下了，至于那份申请，还得去档案室核实。' },
-  registry: { name: '追查开柜通行卡的归属', location: 'archive', agent: 'shuheng', produces: ['E05'], requires: [], repeat: false, report: '开柜用的这张通行卡，登记在园丁许禾名下。不过，登记的是谁的名字，和当晚是谁拿着它，是两回事。' },
-  trolley: { name: '追查录像中的手推车', location: 'equipment', agent: 'shuheng', produces: ['E06'], requires: ['T2'], prerequisite: '先把拍到手推车的通道录像分享给书衡，他才能核对领用记录。', repeat: false, report: '按车身编号查到了，是林舟签领的。领用时间从 19:55 到 20:20，可以和录像里的时间对一对。' },
-  permit: { name: '核实那份维护申请', location: 'archive', agent: 'shuheng', produces: ['E07'], requires: ['P32'], prerequisite: '先把林舟提到维护申请的陈述分享给书衡，他才能查到对应的申请。', repeat: false, report: '林舟提到的那份申请，18:40 就撤销了，当晚也没有其他批准。申请确实存在过，但搬运时已经无效。' },
-  search: { name: '搜索温室', location: 'garden', agent: 'ajing', produces: ['E08'], requires: [], repeat: false, report: '工作台下找到了对应的运输箱，月光石就在里面。物品去向已经有实物支持。' },
-  recover: { name: '重新调取借用凭条', location: 'duty', agent: 'wensheng', produces: ['E03'], requires: [], after: 'interview', repeat: true, report: '借用凭条重新调出来了：林舟在 19:50 借走通行卡，20:25 归还，中途没有转借记录。' }
+  inspect: { name: '亲自检查展柜', location: 'hall', agent: 'captain', produces: ['E01'], requires: [], repeat: false, report: '锁没被撬过。日志上是 20:10 刷卡开柜，紧接着重量减少，少掉的正好是月光石和包装的重量。卡号还在，可以往下查。' },
+  footage: { name: '请阿镜查看录像', location: 'hall', agent: 'ajing', produces: ['E02'], requires: [], repeat: false, report: '看这儿，20:12。有人推着箱子往温室去了，跟展柜的运输箱一个样。脸糊了，车身编号倒还清楚，我抄下来了。' },
+  interview: { name: '访谈并查看凭据', location: 'duty', agent: 'wensheng', produces: ['E03', 'E04'], requires: [], repeat: false, report: '问到了。林舟借过许禾的卡，19:50 借走，20:25 还的，凭条上没有中途转借。他说搬运是按维护申请办的，还给了编号。喏，我记在这页了。' },
+  registry: { name: '追查开柜通行卡的归属', location: 'archive', agent: 'shuheng', produces: ['E05'], requires: [], repeat: false, report: '这张卡登记在园丁许禾名下。这页没有借用记录，还不能确定当晚是谁拿着它。' },
+  trolley: { name: '追查录像中的手推车', location: 'equipment', agent: 'shuheng', produces: ['E06'], requires: ['T2'], prerequisite: '先把拍到手推车的通道录像分享给取教授，他才能核对领用记录。', repeat: false, report: '查到了，林舟签领的。19:55 到 20:20，车身编号也和录像里一致。把这页留好。' },
+  permit: { name: '核实那份维护申请', location: 'archive', agent: 'shuheng', produces: ['E07'], requires: ['P32'], prerequisite: '先把林舟提到维护申请的陈述分享给取教授，他才能查到对应的申请。', repeat: false, report: '这份维护申请在 18:40 就撤销了。我查过，当晚没有其他批准。林舟搬运时，它已经无效。' },
+  search: { name: '搜索温室', location: 'garden', agent: 'ajing', produces: ['E08'], requires: [], repeat: false, report: '队长，这儿。工作台下面那只箱子，打开了，月光石就在里面。可算找着了。' },
+  recover: { name: '重新调取借用凭条', location: 'duty', agent: 'wensheng', produces: ['E03'], requires: [], after: 'interview', repeat: true, report: '副本拿来了。林舟 19:50 借卡，20:25 归还，中间没有转借记录。你再看看。' }
 };
 
 export const resolution = [
-  { key: 'person', title: '取走物品的人', answer: 'lin', options: [['xu', '许禾 · 园丁'], ['lin', '林舟 · 修复师'], ['zhou', '周宁 · 管家']], supports: [['E01', 'E03'], ['E01', 'E02', 'E06']], failure: '人物判断或引用依据尚不充分。需要把现场事件与实际使用人联系起来。' },
-  { key: 'place', title: '实际找回的位置', answer: 'garden', options: Object.entries(locations).map(([id, l]) => [id, l.name]), supports: [['E08']], failure: '位置判断或引用依据尚不充分。去向线索不能代替实地找回记录。' },
-  { key: 'authorization', title: '当时是否获得授权', answer: 'no', options: [['yes', '有有效授权'], ['no', '无有效授权'], ['unknown', '尚不能确定']], supports: [['E07']], failure: '授权判断或引用依据尚不充分。需要核实当晚的有效状态。' }
+  { key: 'person', title: '取走物品的人', answer: 'lin', options: [['xu', '许禾 · 园丁'], ['lin', '林舟 · 修复师'], ['zhou', '周宁 · 管家']], supports: [['E01', 'E03'], ['E01', 'E02', 'E06']], failure: '还不能确定是这个人。把开柜时间和借卡、领车记录再对一遍。' },
+  { key: 'place', title: '实际找回的位置', answer: 'garden', options: Object.entries(locations).map(([id, l]) => [id, l.name]), supports: [['E08']], failure: '还没有在这里找回月光石。顺着去向找一找，得打开箱子确认。' },
+  { key: 'authorization', title: '当时是否获得授权', answer: 'no', options: [['yes', '有有效授权'], ['no', '无有效授权'], ['unknown', '尚不能确定']], supports: [['E07']], failure: '申请当晚还有效吗？请取教授查过原件，再决定有没有批准。' }
 ];
 
 export const truth = [
