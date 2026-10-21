@@ -1,7 +1,7 @@
 // Art placement and flavour text only. Evidence and action rules live in case.mjs.
 export const rooms = {
   hall: {
-    name: '展厅', area: '山庄东翼', companion: 'ajing', image: 'hall-2d-v1.png',
+    name: '展厅', area: '山庄东翼', companion: 'ajing', image: 'hall-2d-v2.webp',
     mood: '展柜没有破损。月光石是怎样离开的？',
     rain: [0, 0, 36, 52], lamp: [86, 30],
     hotspots: [
@@ -11,7 +11,7 @@ export const rooms = {
     ]
   },
   archive: {
-    name: '档案室', area: '山庄西翼', companion: 'shuheng', image: 'archive-2d-v1.png',
+    name: '档案室', area: '山庄西翼', companion: 'shuheng', image: 'archive-2d-v2.webp',
     mood: '台灯亮着，取教授手里的登记册翻过了一页。',
     rain: [0,0,18,50], lamp: [11,28],
     hotspots: [
@@ -21,7 +21,7 @@ export const rooms = {
     ]
   },
   duty: {
-    name: '值班室', area: '山庄内院', companion: 'wensheng', image: 'duty-2d-v1.png',
+    name: '值班室', area: '山庄内院', companion: 'wensheng', image: 'duty-2d-v2.webp',
     mood: '林舟坐在桌边，手旁放着一张凭条。',
     rain: [0,0,39,48], lamp: [48,27],
     hotspots: [
@@ -31,7 +31,7 @@ export const rooms = {
     ]
   },
   equipment: {
-    name: '器材间', area: '山庄后院', companion: 'shuheng', image: 'equipment-2d-v1.png',
+    name: '器材间', area: '山庄后院', companion: 'shuheng', image: 'equipment-2d-v2.webp',
     mood: '推车停在工具架旁，登记册还摊在桌上。',
     rain: [2,0,18,35], lamp: [76,22],
     hotspots: [
@@ -41,7 +41,7 @@ export const rooms = {
     ]
   },
   garden: {
-    name: '温室', area: '山庄北侧', companion: 'ajing', image: 'garden-2d-v1.png',
+    name: '温室', area: '山庄北侧', companion: 'ajing', image: 'garden-2d-v2.webp',
     mood: '雨水遮住了玻璃。植物架后，还有没看见的角落。',
     rain: [0,0,100,57], lamp: [74,19],
     hotspots: [

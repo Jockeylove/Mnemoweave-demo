@@ -2,7 +2,7 @@
 // Atmosphere is dramatised; the case's chronology and unanswered motive stay intact.
 export const recapChapters = [
   {
-    title:'柜门还锁着', time:'夜里九点，调查开始', image:'assets/scenes/hall-2d-v1.png',
+    title:'柜门还锁着', time:'夜里九点，调查开始', image:'assets/scenes/hall-2d-v2.webp',
     alt:'雨夜的展厅里，完好的玻璃展柜空着',
     paragraphs:[
       '管家发现月光石不见时，展柜仍然锁着。玻璃没碎，锁上也没有撬过的痕迹。你们赶到后，所有人的目光都落在那个空位上。',
@@ -10,7 +10,7 @@ export const recapChapters = [
     ]
   },
   {
-    title:'卡换了一双手', time:'19:50，值班室', image:'assets/recap/card-handoff-v1.png',
+    title:'卡换了一双手', time:'19:50，值班室', image:'assets/recap/card-handoff-v2.webp',
     alt:'台灯下，一张通行卡经过借用登记后交到另一人手中',
     paragraphs:[
       '19:50，修复师林舟借走了园丁许禾的通行卡。五分钟后，他又领了一辆手推车。卡和车都有签领记录，只是分别放在值班室和器材间。',
@@ -18,7 +18,7 @@ export const recapChapters = [
     ]
   },
   {
-    title:'走廊里的两分钟', time:'20:10 至 20:12，展厅到温室', image:'assets/recap/corridor-v1.png',
+    title:'走廊里的两分钟', time:'20:10 至 20:12，展厅到温室', image:'assets/recap/corridor-v2.webp',
     alt:'一个背对画面的搬运者推着装有运输箱的手推车，走向温室',
     paragraphs:[
       '20:10，林舟用借来的卡打开展柜，取走月光石和包装。两分钟后，载着运输箱的推车出现在走廊里，朝温室去了。',
@@ -26,7 +26,7 @@ export const recapChapters = [
     ]
   },
   {
-    title:'他说，按申请搬的', time:'回到那份维护申请', image:'assets/scenes/archive-2d-v1.png',
+    title:'他说，按申请搬的', time:'回到那份维护申请', image:'assets/scenes/archive-2d-v2.webp',
     alt:'档案室的灯照着摊开的登记册和维护申请',
     paragraphs:[
       '问起搬运，林舟给了闻声一个申请编号：“我是按维护申请搬的，你们可以去查。”那份申请确实存在。取教授翻到后面，却看到了撤销记录。',
@@ -34,7 +34,7 @@ export const recapChapters = [
     ]
   },
   {
-    title:'它就在工作台下面', time:'温室，箱子打开的时候', image:'assets/recap/moonstone-found-v1.png',
+    title:'它就在工作台下面', time:'温室，箱子打开的时候', image:'assets/recap/moonstone-found-v2.webp',
     alt:'温室工作台下面，打开的运输箱里放着月光石',
     paragraphs:[
       '那只箱子没有离开山庄。林舟把它藏在温室的工作台下，直到阿镜俯下身，才在阴影里找到它。箱盖掀开，月光石还在里面。',
