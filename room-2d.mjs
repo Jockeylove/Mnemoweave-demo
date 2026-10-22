@@ -6,6 +6,7 @@ import { materialView } from './evidence-visuals.mjs';
 import { openingPrelude, openingBeats, conversationEntry, conversationTopics, investigationLead, captainReflection, reportResponses } from './narrative.mjs';
 import { councilEvidence, councilNode } from './council.mjs';
 import { recapChapters, closingFrames } from './recap.mjs';
+import { setupMobileDisplay } from './mobile-display.mjs';
 
 const SAVE_KEY = 'mnemoweave.moonstone.2d.v1';
 const $ = selector => document.querySelector(selector);
@@ -356,6 +357,9 @@ function enter() {
 function guide() {
   show(`<section class="journal"><span class="small">调查指南</span><h2 id="panel-title">从哪里开始调查</h2><p>你是调查队长。点击场景中的标记观察物件，或让搭档展开调查；通过「山庄地点」前往其他房间。</p><p>队员的发现先留在各自的记忆里。听取汇报后，材料才进入你的手记；你可以单独告诉某位队员，也可以放入公共证据板让全队知晓。</p><p>共有 8 次行动。调查和确认结案各消耗 1 次；小队讨论、切换地点、听取汇报与传递材料免费。记得留 1 次行动结案。</p><p>结案前先召集大家。队员逐步出示材料、互相核对，队长可以选择追问；材料充分后再选择最终人选。地点、授权与引用依据从实际讨论中整理。</p><div class="choices">${choice('明白了','close','',true)}</div></section>`,'guide');
 }
+function mobileTools() {
+  show(`<section class="journal"><span class="small">调查工具</span><h2 id="panel-title">游玩设置</h2><p>${escape($('#save-status').textContent)}</p><div class="choices"><button data-display-mode>${document.fullscreenElement?'退出全屏':'横屏 / 全屏'}</button>${choice($('#hints').textContent,'mobileHints')}${choice(demoReturn?'退出演示':'演示破案','toggleDemo')}${choice('调查指南','guide')}${choice('重新开始','restart','',false,Boolean(demoReturn))}${choice('返回现场','close')}</div><p id="display-message" role="status">手机请横屏游玩。自动锁定方向需要浏览器支持。</p><p>交流、传递与切换地点免费。记得留 1 次行动结案。</p></section>`, 'mobile-tools');
+}
 function reset() {
   // Remove the saved run before changing the UI; a new run is saved only on Start.
   try { localStorage.removeItem(SAVE_KEY); }
@@ -381,17 +385,19 @@ function render() {
   $('.hotspots').innerHTML=current.hotspots.map(spot=>{
     const done=spot.action && complete(spot.action);
     const subtitle=spot.destination ? '前往此处' : done ? received(spot.action) ? '已记录 · 可重看' : '已调查 · 待汇报' : actions[spot.action].agent === 'captain' ? '亲自调查' : `交给${participants[actions[spot.action].agent].name}`;
-    return `<button class="hotspot ${done ? 'done' : ''}" id="${spot.id}" style="--x:${spot.x}%;--y:${spot.y}%" data-command="${spot.destination ? 'travel' : 'detail'}" data-value="${spot.destination || spot.action}" data-spot="${spot.id}" aria-label="${spot.title}"><i>${spot.destination ? '↑' : '◇'}</i><span>${spot.title}<small>${subtitle}</small></span></button>`;
+    return `<button class="hotspot ${done ? 'done' : ''}" id="${spot.id}" style="--x:${spot.x}%;--y:${spot.y}%" data-command="${spot.destination ? 'travel' : 'detail'}" data-value="${spot.destination || spot.action}" data-spot="${spot.id}" aria-label="${spot.title}，${subtitle}"><i>${spot.destination ? '↑' : '◇'}</i><span>${spot.title}<small>${subtitle}</small></span></button>`;
   }).join('');
   $('#talk').dataset.actor=actor; $('#talk img').src=`./${agents[actor].portrait}`; $('#talk img').alt=agents[actor].name;
   $('#talk strong').textContent=agents[actor].name; $('#talk small').textContent=agents[actor].role;
   $('#partner-state').textContent=pending(actor).length ? `${pending(actor).length} 项发现 · 等待汇报` : '有线索想问？找他聊聊';
   $('#count').textContent=knownEvidence(state,'captain').length; $('#pending-count').textContent=pending().length;
   $('#objective').textContent=!playing() ? state.phase === 'solved' ? '案件已解决。可查看结案复盘。' : '行动已耗尽。可回看本轮调查。' : pending().length ? '有队员带回了发现。点击「联系队员」听取汇报。' : investigationLead(state).text;
-  $('#story-stage').textContent=investigationLead(state).title+' · 梳理下一步';
+  const stageLabel=investigationLead(state).title+' · 梳理下一步';
+  $('#story-stage').innerHTML=`<span class="full-label">${escape(stageLabel)}</span><span class="compact-label">案情进展</span>`;
+  $('#story-stage').setAttribute('aria-label',stageLabel);
   $('#action-budget').textContent=`剩余 ${state.remaining} / 8 次行动`; $('#action-budget').classList.toggle('last-action',state.remaining === 1);
 }
-const commands={close,detail,investigate,receive,talk,journal,team,meeting,map,travel,conclude,restart,reset,enter,guide,material,opening,topic,progress,pursueLead,epilogue,ending,report,vnNext,vnPrevious,toggleDemo,exitDemo,councilChoice,recapPage,recapNext,recapPrevious,caseFile,
+const commands={close,detail,investigate,receive,talk,journal,team,meeting,map,travel,conclude,restart,reset,enter,guide,mobileTools,mobileHints(){ $('#hints').click(); mobileTools(); },material,opening,topic,progress,pursueLead,epilogue,ending,report,vnNext,vnPrevious,toggleDemo,exitDemo,councilChoice,recapPage,recapNext,recapPrevious,caseFile,
   share(value) {
     const [id,recipient]=value.split(':');
     send({type:'share',sender:'captain',recipient,evidence:[id]});
@@ -428,3 +434,4 @@ if (bootError) {
   $('#close').hidden=true;
   show(`<section class="journal"><h2 id="panel-title">进度读取失败</h2><p>${escape(bootError)}</p><p>原进度还在。可以先关闭页面，或重新开始这版游戏。</p><div class="choices">${choice('重新开始二维版','reset','',true)}</div></section>`,'save-error');
 } else titleScreen();
+setupMobileDisplay();
