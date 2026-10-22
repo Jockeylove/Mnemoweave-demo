@@ -6,13 +6,13 @@ import { materialView } from './evidence-visuals.mjs';
 import { openingPrelude, openingBeats, conversationEntry, conversationTopics, investigationLead, captainReflection, reportResponses } from './narrative.mjs';
 import { councilEvidence, councilNode } from './council.mjs';
 import { recapChapters, closingFrames } from './recap.mjs';
-import { setupMobileDisplay } from './mobile-display.mjs';
+import { setupMobileDisplay } from './mobile-display.mjs?v=0.5.4';
 
 const SAVE_KEY = 'mnemoweave.moonstone.2d.v1';
 const $ = selector => document.querySelector(selector);
 const panel = $('#panel');
 const fresh = () => transition(createGame(), { type: 'start' });
-let state = fresh(), room = 'hall', bootError = '', navigating = false, hasSave = false, toastTimer;
+let state = fresh(), room = 'hall', bootError = '', navigating = false, navigation = null, hasSave = false, toastTimer;
 let conversationMemory = {}, demoReturn = null;
 try {
   const saved = localStorage.getItem(SAVE_KEY);
@@ -48,7 +48,7 @@ function notify(text) {
   clearTimeout(toastTimer); $('#toast').textContent = text; $('#toast').classList.add('visible');
   toastTimer = setTimeout(() => $('#toast').classList.remove('visible'), 4200);
 }
-function close() { panel.close(); }
+function close() { if (navigation) cancelTravel(); else panel.close(); }
 function show(content, mode) {
   $('#panel-body').innerHTML = content; panel.dataset.mode = mode;
   if (!panel.open) panel.showModal();
@@ -277,16 +277,31 @@ function map() {
 async function travel(id) {
   if (navigating) return;
   if (id === room) { close(); return; }
+  const image=new Image(), portrait=new Image(), request={image,portrait};
+  navigation=request;
   navigating=true;
+  show(`<section class="journal"><span class="small">切换地点</span><h2 id="panel-title">正在前往${rooms[id].name}</h2><p role="status">正在加载场景与同行队员，加载完成后进入。切换地点不消耗行动。</p><div class="choices">${choice('留在当前地点','cancelTravel')}</div></section>`, 'travel-loading');
   try {
-    const image=new Image(), portrait=new Image();
     image.src=roomImage(id); portrait.src=`./${agents[rooms[id].companion].portrait}`;
     await Promise.all([image.decode(),portrait.decode()]);
-    room=id; persist(); close(); render();
-    $('.room-art').getAnimations().forEach(animation=>animation.cancel());
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) $('.room-art').animate([{opacity:0,transform:'scale(1.035)'},{opacity:1,transform:'scale(1.015)'}],{duration:650,easing:'ease-out'});
-  } catch { notify('场景图片加载失败，请稍后重试。'); }
-  finally { navigating=false; }
+  } catch {
+    if (navigation!==request) return;
+    navigation=null; navigating=false;
+    show(`<section class="journal"><span class="small">切换地点未完成</span><h2 id="panel-title">暂时无法进入${rooms[id].name}</h2><p>场景图片未能加载。你仍在${rooms[room].name}，调查进度未变；可以重试或继续在这里调查。</p><div class="choices">${choice('重新加载','travel',id,true)}${choice('留在当前地点','close')}</div></section>`, 'travel-error');
+    return;
+  }
+  if (navigation!==request) return;
+  navigation=null; navigating=false;
+  room=id; persist(); close(); render();
+  $('.room-art').getAnimations().forEach(animation=>animation.cancel());
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) $('.room-art').animate([{opacity:0,transform:'scale(1.035)'},{opacity:1,transform:'scale(1.015)'}],{duration:650,easing:'ease-out'});
+}
+function cancelTravel() {
+  if (!navigation) return;
+  const request=navigation;
+  navigation=null; navigating=false;
+  request.image.removeAttribute('src'); request.portrait.removeAttribute('src');
+  panel.close();
 }
 function conclude() {
   meeting();
@@ -397,17 +412,20 @@ function render() {
   $('#story-stage').setAttribute('aria-label',stageLabel);
   $('#action-budget').textContent=`剩余 ${state.remaining} / 8 次行动`; $('#action-budget').classList.toggle('last-action',state.remaining === 1);
 }
-const commands={close,detail,investigate,receive,talk,journal,team,meeting,map,travel,conclude,restart,reset,enter,guide,mobileTools,mobileHints(){ $('#hints').click(); mobileTools(); },material,opening,topic,progress,pursueLead,epilogue,ending,report,vnNext,vnPrevious,toggleDemo,exitDemo,councilChoice,recapPage,recapNext,recapPrevious,caseFile,
+const commands={close,detail,investigate,receive,talk,journal,team,meeting,map,travel,cancelTravel,conclude,restart,reset,enter,guide,mobileTools,mobileHints(){ $('#hints').click(); mobileTools(); },material,opening,topic,progress,pursueLead,epilogue,ending,report,vnNext,vnPrevious,toggleDemo,exitDemo,councilChoice,recapPage,recapNext,recapPrevious,caseFile,
   share(value) {
     const [id,recipient]=value.split(':');
     send({type:'share',sender:'captain',recipient,evidence:[id]});
     journal(); notify(recipient === 'all' ? '材料已放入公共证据板 · 全队知晓' : `${agents[recipient].name}已收到这份材料`);
   }
 };
-document.addEventListener('click',event=>{
+document.addEventListener('click',async event=>{
   const button=event.target.closest('[data-command]');
-  if (!button || button.disabled || navigating || (bootError && button.dataset.command !== 'reset')) return;
-  try { commands[button.dataset.command](button.dataset.value,button.dataset.spot); } catch(error) { notify(error.message); }
+  if (!button || button.disabled || (navigating && button.dataset.command !== 'cancelTravel') || (bootError && button.dataset.command !== 'reset')) return;
+  try {
+    if (button.matches('#enter-game, #title-screen [data-command="toggleDemo"], #title-screen [data-command="opening"]')) await mobileDisplay.enterLandscape();
+    await commands[button.dataset.command](button.dataset.value,button.dataset.spot);
+  } catch(error) { notify(error.message); }
 });
 panel.addEventListener('keydown',event=>{
   if(panel.querySelector('.story-recap') && !event.altKey && !event.ctrlKey && !event.metaKey) {
@@ -428,10 +446,13 @@ $('#close').addEventListener('click',close);
 $('#hints').addEventListener('click',()=>{
   const hidden=$('#game').classList.toggle('hide-hints'); $('#hints').setAttribute('aria-pressed',String(!hidden)); $('#hints').textContent=`调查标记 ${hidden ? '关' : '开'}`;
 });
-panel.addEventListener('cancel',event=>{if(bootError)event.preventDefault();});
+panel.addEventListener('cancel',event=>{
+  if(bootError)event.preventDefault();
+  else if(navigation) {event.preventDefault();cancelTravel();}
+});
 render();
 if (bootError) {
   $('#close').hidden=true;
   show(`<section class="journal"><h2 id="panel-title">进度读取失败</h2><p>${escape(bootError)}</p><p>原进度还在。可以先关闭页面，或重新开始这版游戏。</p><div class="choices">${choice('重新开始二维版','reset','',true)}</div></section>`,'save-error');
 } else titleScreen();
-setupMobileDisplay();
+const mobileDisplay=setupMobileDisplay();
