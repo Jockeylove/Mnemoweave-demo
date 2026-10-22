@@ -1,10 +1,10 @@
 export const agents = {
-  ajing: { name: '阿镜', role: '侦探 · 现场勘查', initial: '镜', portrait: 'assets/portraits/ajing-painted-v8.webp', profile: '说话有点懒散，查起现场倒很利落。', bio: '队长，站这儿也看不出花来。分头查，有发现叫我。' },
-  wensheng: { name: '闻声', role: '调查助手 · 人物访谈', initial: '声', portrait: 'assets/portraits/wensheng-painted-v6.webp', profile: '爱跟人聊天，一边听，一边飞快地记笔记。', bio: '笔带了，本子也带了。走吧，今天谁先问？' },
-  shuheng: { name: '取风', role: '取教授 · 档案核对', initial: '风', portrait: 'assets/portraits/qufeng-painted-v3.webp', profile: '大家叫他取教授。遇上拿不准的事，会把原件再翻一遍。', bio: '要查哪份记录？把你手上的材料给我看看。' }
+  ajing: { name: '阿镜', role: '侦探 · 现场勘查', initial: '镜', portrait: 'assets/portraits/ajing-painted-v9.webp', profile: '说话有点懒散，查起现场倒很利落。', bio: '队长，站这儿也看不出花来。分头查，有发现叫我。' },
+  wensheng: { name: '闻声', role: '调查助手 · 人物访谈', initial: '声', portrait: 'assets/portraits/wensheng-painted-v7.webp', profile: '爱跟人聊天，一边听，一边飞快地记笔记。', bio: '笔带了，本子也带了。走吧，今天谁先问？' },
+  shuheng: { name: '取风', role: '取教授 · 档案核对', initial: '风', portrait: 'assets/portraits/qufeng-painted-v4.webp', profile: '大家叫他取教授。遇上拿不准的事，会把原件再翻一遍。', bio: '要查哪份记录？把你手上的材料给我看看。' }
 };
 export const participants = {
-  captain: { name: '你', role: '现场队长', portrait: 'assets/portraits/captain-painted-v4.webp', bio: '亲自观察，和搭档一起拼出完整经过。' },
+  captain: { name: '你', role: '现场队长', portrait: 'assets/portraits/captain-painted-v5.webp', bio: '亲自观察，和搭档一起拼出完整经过。' },
   ...agents
 };
 
